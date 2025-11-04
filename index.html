@@ -174,7 +174,7 @@
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/>
                         </svg>
                     </button>
-                    <div class="w-10 h-10 rounded-full bg-gradient-to-br from-[#FF6B35] to-[#ff8555] flex items-center justify-center text-white font-bold">
+                    <div class="w-10 h-10 rounded-full bg-gradient-to-br from-[#FF6B35] to-[#ff8555] flex items-center justify-center text-white font-bold" id="avatarInitial">
                         A
                     </div>
                 </div>
@@ -533,7 +533,7 @@
 
             <!-- Profile Header -->
             <div class="text-center mb-6">
-                <div class="w-24 h-24 mx-auto mb-4 rounded-full bg-gradient-to-br from-[#FF6B35] to-[#ff8555] flex items-center justify-center text-white text-4xl font-bold">
+                <div class="w-24 h-24 mx-auto mb-4 rounded-full bg-gradient-to-br from-[#FF6B35] to-[#ff8555] flex items-center justify-center text-white text-4xl font-bold" id="profileAvatar">
                     M
                 </div>
                 <h3 class="text-3xl font-bold text-white mb-2" id="profileName">Maxim Lisnic</h3>
@@ -610,6 +610,56 @@
     </div>
 
     <script>
+        // IndexedDB wrapper for iframe-safe storage
+        const DB_NAME = 'SportStatsDB';
+        const DB_VERSION = 1;
+        const STORE_NAME = 'appData';
+        let db;
+
+        // Initialize IndexedDB
+        function initDB() {
+            return new Promise((resolve, reject) => {
+                const request = indexedDB.open(DB_NAME, DB_VERSION);
+
+                request.onerror = () => reject(request.error);
+                request.onsuccess = () => {
+                    db = request.result;
+                    resolve(db);
+                };
+
+                request.onupgradeneeded = (event) => {
+                    const database = event.target.result;
+                    if (!database.objectStoreNames.contains(STORE_NAME)) {
+                        database.createObjectStore(STORE_NAME);
+                    }
+                };
+            });
+        }
+
+        // Save data to IndexedDB
+        function saveData(key, value) {
+            return new Promise((resolve, reject) => {
+                const transaction = db.transaction([STORE_NAME], 'readwrite');
+                const store = transaction.objectStore(STORE_NAME);
+                const request = store.put(value, key);
+
+                request.onsuccess = () => resolve();
+                request.onerror = () => reject(request.error);
+            });
+        }
+
+        // Load data from IndexedDB
+        function loadData(key) {
+            return new Promise((resolve, reject) => {
+                const transaction = db.transaction([STORE_NAME], 'readonly');
+                const store = transaction.objectStore(STORE_NAME);
+                const request = store.get(key);
+
+                request.onsuccess = () => resolve(request.result);
+                request.onerror = () => reject(request.error);
+            });
+        }
+
         // Data storage in memory
         let activityData = [45, 60, 55, 70, 80, 90, 75];
         let chart;
@@ -623,58 +673,83 @@
             activity: [45, 60, 55, 70, 80, 90, 75]
         };
         let profileData = {
-            name: "Maxim Lisnic",
-            age: 17,
-            education: "Studiez la Colegiul UTM"
+            name: "Nume Prenume",
+            age: 25,
+            education: "Studiez la Instituția ta"
         };
 
         // Initialize
-        document.addEventListener('DOMContentLoaded', function() {
+        document.addEventListener('DOMContentLoaded', async function() {
+            await initDB();
             updateDots(appData.streak);
             initChart();
-            loadFromStorage();
+            await loadFromStorage();
         });
 
-        // Load data from memory
-        function loadFromStorage() {
-            if (appData) {
-                if (appData.streak) {
+        // Load data from IndexedDB
+        async function loadFromStorage() {
+            try {
+                const storedAppData = await loadData('appData');
+                const storedProfileData = await loadData('profileData');
+
+                if (storedAppData) {
+                    appData = storedAppData;
                     document.getElementById('streakNumber').textContent = appData.streak;
-                    updateDots(appData.streak);
-                }
-                if (appData.steps) {
                     document.getElementById('stepsNumber').textContent = formatSteps(appData.steps);
-                }
-                if (appData.percentile) {
                     document.getElementById('percentile').textContent = appData.percentile + '%';
-                }
-                if (appData.calories) {
                     document.getElementById('caloriesNumber').textContent = appData.calories.toLocaleString();
-                }
-                if (appData.distance) {
                     document.getElementById('distanceNumber').textContent = appData.distance;
-                }
-                if (appData.activeMinutes) {
                     document.getElementById('activeMinutesNumber').textContent = appData.activeMinutes;
-                }
-                if (appData.activity) {
                     activityData = appData.activity;
+                    updateDots(appData.streak);
                     updateChart();
                 }
+
+                if (storedProfileData) {
+                    profileData = storedProfileData;
+                    updateProfileUI();
+                }
+            } catch (error) {
+                console.error('Error loading data:', error);
             }
         }
 
-        // Save data to memory
-        function saveToStorage() {
-            appData = {
-                streak: parseInt(document.getElementById('streakNumber').textContent),
-                steps: parseSteps(document.getElementById('stepsNumber').textContent),
-                percentile: parseInt(document.getElementById('percentile').textContent),
-                calories: parseInt(document.getElementById('caloriesNumber').textContent.replace(/,/g, '')),
-                distance: parseFloat(document.getElementById('distanceNumber').textContent),
-                activeMinutes: parseInt(document.getElementById('activeMinutesNumber').textContent),
-                activity: activityData
-            };
+        // Save data to IndexedDB
+        async function saveToStorage() {
+            try {
+                appData = {
+                    streak: parseInt(document.getElementById('streakNumber').textContent),
+                    steps: parseSteps(document.getElementById('stepsNumber').textContent),
+                    percentile: parseInt(document.getElementById('percentile').textContent),
+                    calories: parseInt(document.getElementById('caloriesNumber').textContent.replace(/,/g, '')),
+                    distance: parseFloat(document.getElementById('distanceNumber').textContent),
+                    activeMinutes: parseInt(document.getElementById('activeMinutesNumber').textContent),
+                    activity: activityData
+                };
+
+                profileData = {
+                    name: document.getElementById('profileName').textContent,
+                    age: parseInt(document.getElementById('profileAge').textContent),
+                    education: document.getElementById('profileEducation').textContent
+                };
+
+                await saveData('appData', appData);
+                await saveData('profileData', profileData);
+            } catch (error) {
+                console.error('Error saving data:', error);
+            }
+        }
+
+        // Update profile UI elements
+        function updateProfileUI() {
+            document.getElementById('profileName').textContent = profileData.name;
+            document.getElementById('profileAge').textContent = profileData.age + ' ani';
+            document.getElementById('profileEducation').textContent = profileData.education;
+
+            // Update avatar initials
+            const initial = profileData.name.charAt(0).toUpperCase();
+            document.getElementById('avatarInitial').textContent = initial;
+            document.getElementById('profileAvatar').textContent = initial;
         }
 
         // Format steps (10000 -> 10k)
@@ -825,29 +900,29 @@
         }
 
         // Save functions
-        function saveStreak() {
+        async function saveStreak() {
             const value = parseInt(document.getElementById('streakInput').value);
             if (value >= 0 && value <= 30) {
                 document.getElementById('streakNumber').textContent = value;
                 updateDots(value);
-                saveToStorage();
+                await saveToStorage();
                 closeModal('streakModal');
             }
         }
 
-        function saveSteps() {
+        async function saveSteps() {
             const steps = parseInt(document.getElementById('stepsInput').value);
             const percentile = parseInt(document.getElementById('percentileInput').value);
 
             if (steps >= 0 && percentile >= 0 && percentile <= 100) {
                 document.getElementById('stepsNumber').textContent = formatSteps(steps);
                 document.getElementById('percentile').textContent = percentile + '%';
-                saveToStorage();
+                await saveToStorage();
                 closeModal('stepsModal');
             }
         }
 
-        function saveActivity() {
+        async function saveActivity() {
             activityData = [
                 parseInt(document.getElementById('actMon').value),
                 parseInt(document.getElementById('actTue').value),
@@ -858,7 +933,7 @@
                 parseInt(document.getElementById('actSun').value)
             ];
             updateChart();
-            saveToStorage();
+            await saveToStorage();
             closeModal('activityModal');
         }
 
@@ -917,9 +992,7 @@
 
         // Show profile modal
         function showProfile() {
-            document.getElementById('profileName').textContent = profileData.name;
-            document.getElementById('profileAge').textContent = profileData.age + ' ani';
-            document.getElementById('profileEducation').textContent = profileData.education;
+            updateProfileUI();
             document.getElementById('profileModal').classList.remove('hidden');
         }
 
@@ -933,7 +1006,7 @@
         }
 
         // Save profile
-        function saveProfile() {
+        async function saveProfile() {
             const name = document.getElementById('editProfileName').value;
             const age = parseInt(document.getElementById('editProfileAge').value);
             const education = document.getElementById('editProfileEducation').value;
@@ -943,9 +1016,11 @@
                 profileData.age = age;
                 profileData.education = education;
 
-                // Update avatar initial
-                const initial = name.charAt(0).toUpperCase();
-                document.querySelector('.bg-gradient-to-br.from-\\[\\#FF6B35\\]').textContent = initial;
+                // Update UI
+                updateProfileUI();
+
+                // Save to IndexedDB
+                await saveToStorage();
 
                 closeModal('editProfileModal');
             }
