@@ -84,7 +84,9 @@ async function loadFromStorage() {
             appData = storedAppData;
             document.getElementById('streakNumber').textContent = appData.streak;
             document.getElementById('stepsNumber').textContent = formatSteps(appData.steps);
-            document.getElementById('percentile').textContent = appData.percentile + '%';
+            // Calculăm automat percentilul pe baza pașilor salvați
+            const calculatedPercentile = calculatePercentile(appData.steps);
+            document.getElementById('percentile').textContent = calculatedPercentile + '%';
             document.getElementById('caloriesNumber').textContent = appData.calories.toLocaleString();
             document.getElementById('distanceNumber').textContent = appData.distance;
             document.getElementById('activeMinutesNumber').textContent = appData.activeMinutes;
@@ -154,6 +156,47 @@ function parseSteps(stepsStr) {
     }
     return parseInt(stepsStr);
 }
+ 
+ 
+ // Calculate percentile based on steps
+ function calculatePercentile(steps) {
+     // Formula bazată pe studii despre pași zilnici:
+     // 0 pași = 0%
+     // 2,000 pași = 10% (foarte sedentar)
+   // 5,000 pași = 40% (sedentar)
+    // 7,500 pași = 60% (moderat activ)
+     // 10,000 pași = 80% (activ - obiectiv recomandat)
+   // 12,500 pași = 90% (foarte activ)
+    // 15,000+ pași = 95%+ (excepțional de activ)
+
+    if (steps <= 0) return 0;
+    if (steps >= 15000) return 99;
+
+     // Interpolare pentru o distribuție mai realistă
+    let percentile;
+
+     if (steps <= 2000) {
+        // 0-2000 pași: 0-10%
+         percentile = (steps / 2000) * 10;
+    } else if (steps <= 5000) {
+         // 2000-5000 pași: 10-40%
+        percentile = 10 + ((steps - 2000) / 3000) * 30;
+    } else if (steps <= 7500) {
+       // 5000-7500 pași: 40-60%
+         percentile = 40 + ((steps - 5000) / 2500) * 20;
+     } else if (steps <= 10000) {
+         // 7500-10000 pași: 60-80%
+         percentile = 60 + ((steps - 7500) / 2500) * 20;
+    } else if (steps <= 12500) {
+         // 10000-12500 pași: 80-90%
+         percentile = 80 + ((steps - 10000) / 2500) * 10;
+     } else {
+         // 12500-15000 pași: 90-99%
+         percentile = 90 + ((steps - 12500) / 2500) * 9;
+      }
+ 
+     return Math.round(percentile);
+ }
 
 // Update dots display
 function updateDots(count) {
@@ -262,9 +305,20 @@ function editStreak() {
 function editSteps() {
     const steps = parseSteps(document.getElementById('stepsNumber').textContent);
     document.getElementById('stepsInput').value = steps;
-    document.getElementById('percentileInput').value = document.getElementById('percentile').textContent;
     document.getElementById('stepsModal').classList.remove('hidden');
 }
+ 
+     // Calculăm automat percentilul
+     const percentile = calculatePercentile(steps);
+     document.getElementById('percentileInput').value = percentile;
+
+    // Adăugăm event listener pentru a actualiza percentilul în timp real când schimbi pașii
+     const stepsInput = document.getElementById('stepsInput');
+    stepsInput.addEventListener('input', function() {
+        const newPercentile = calculatePercentile(parseInt(this.value) || 0);
+        document.getElementById('percentileInput').value = newPercentile;
+     });
+
 
 function editActivity() {
     document.getElementById('actMon').value = activityData[0];
@@ -298,9 +352,10 @@ async function saveStreak() {
 
 async function saveSteps() {
     const steps = parseInt(document.getElementById('stepsInput').value);
-    const percentile = parseInt(document.getElementById('percentileInput').value);
-
-    if (steps >= 0 && percentile >= 0 && percentile <= 100) {
+   // Calculăm automat percentilul pe baza pașilor
+    const percentile = calculatePercentile(steps);
+ 
+   if (steps >= 0) {
         document.getElementById('stepsNumber').textContent = formatSteps(steps);
         document.getElementById('percentile').textContent = percentile + '%';
         await saveToStorage();
