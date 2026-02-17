@@ -1,0 +1,139 @@
+:root {
+    --primary-orange: #FF6B35;
+    --bg-dark: #0a0a0a;
+    --card-dark: #1a1a1a;
+    --card-border: #2a2a2a;
+}
+
+body {
+    background: linear-gradient(135deg, #1a1a1a 0%, #0a0a0a 100%);
+    min-height: 100vh;
+}
+
+.stat-card {
+    background: var(--card-dark);
+    border: 2px solid var(--card-border);
+    border-radius: 2rem;
+    transition: all 0.3s ease;
+}
+
+.stat-card:hover {
+    transform: translateY(-5px);
+    border-color: var(--primary-orange);
+    box-shadow: 0 10px 30px rgba(255, 107, 53, 0.2);
+}
+
+.dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    border: 2px solid var(--primary-orange);
+    background: transparent;
+    transition: all 0.3s ease;
+}
+
+.dot.filled {
+    background: var(--primary-orange);
+}
+
+.activity-label {
+    font-size: 0.75rem;
+    color: #888;
+}
+
+.edit-btn {
+    background: var(--primary-orange);
+    transition: all 0.3s ease;
+}
+
+.edit-btn:hover {
+    background: #ff8555;
+    transform: scale(1.05);
+}
+
+.modal {
+    backdrop-filter: blur(10px);
+}
+
+.gradient-text {
+    background: linear-gradient(135deg, var(--primary-orange) 0%, #ff8555 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+
+input[type="number"], input[type="text"], select {
+    background: var(--card-dark);
+    border: 2px solid var(--card-border);
+    color: white;
+    border-radius: 0.5rem;
+    padding: 0.75rem;
+    font-size: 16px;
+}
+
+input[type="number"]:focus, input[type="text"]:focus, select:focus {
+    outline: none;
+    border-color: var(--primary-orange);
+}
+
+.shoe-icon {
+    filter: drop-shadow(0 0 10px rgba(255, 107, 53, 0.5));
+}
+
+.navbar {
+    background: rgba(26, 26, 26, 0.8);
+    backdrop-filter: blur(20px);
+    border-bottom: 1px solid var(--card-border);
+    position: sticky;
+    top: 0;
+    z-index: 100;
+}
+
+.nav-link {
+    color: #888;
+    transition: all 0.3s ease;
+    position: relative;
+}
+
+.nav-link:hover {
+    color: var(--primary-orange);
+}
+
+.nav-link.active {
+    color: var(--primary-orange);
+}
+
+.nav-link.active::after {
+    content: '';
+    position: absolute;
+    bottom: -4px;
+    left: 0;
+    right: 0;
+    height: 2px;
+    background: var(--primary-orange);
+}
+
+.footer {
+    background: var(--card-dark);
+    border-top: 1px solid var(--card-border);
+    margin-top: 4rem;
+}
+
+.social-link {
+    transition: all 0.3s ease;
+}
+
+.social-link:hover {
+    color: var(--primary-orange);
+    transform: translateY(-3px);
+}
+
+.mobile-menu {
+    max-height: 0;
+    overflow: hidden;
+    transition: max-height 0.3s ease;
+}
+
+.mobile-menu.open {
+    max-height: 500px;
+}
