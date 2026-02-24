@@ -52,8 +52,8 @@ function loadData(key) {
 let activityData = [45, 60, 55, 70, 80, 90, 75];
 let chart;
 let appData = {
-    streak: 14,
-    steps: 10000,
+    streak: 0,
+    steps: 0,
     percentile: 86,
     calories: 2450,
     distance: 8.5,
