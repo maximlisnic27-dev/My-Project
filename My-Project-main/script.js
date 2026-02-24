@@ -56,7 +56,7 @@ let appData = {
     steps: 0,
     percentile: 86,
     calories: 2450,
-    distance: 8.5,
+    distance: 0,
     activeMinutes: 127,
     activity: [45, 60, 55, 70, 80, 90, 75]
 };
@@ -108,14 +108,14 @@ async function loadFromStorage() {
 async function saveToStorage() {
     try {
         appData = {
-            streak: parseInt(document.getElementById('streakNumber').textContent),
-            steps: parseSteps(document.getElementById('stepsNumber').textContent),
-            percentile: parseInt(document.getElementById('percentile').textContent),
-            calories: parseInt(document.getElementById('caloriesNumber').textContent.replace(/,/g, '')),
-            distance: parseFloat(document.getElementById('distanceNumber').textContent),
-            activeMinutes: parseInt(document.getElementById('activeMinutesNumber').textContent),
-            activity: activityData
-        };
+    streak: parseInt(document.getElementById('streakNumber').textContent),
+    steps: parseSteps(document.getElementById('stepsNumber').textContent),
+    percentile: parseInt(document.getElementById('percentile').textContent),
+    calories: parseInt(document.getElementById('caloriesNumber').textContent.replace(/,/g, '')),
+    distance: appData.distance, 
+    activeMinutes: parseInt(document.getElementById('activeMinutesNumber').textContent),
+    activity: activityData
+};
 
         profileData = {
             name: document.getElementById('profileName').textContent,
@@ -155,6 +155,10 @@ function parseSteps(stepsStr) {
         return parseInt(parseFloat(stepsStr) * 1000);
     }
     return parseInt(stepsStr);
+}
+// Pasi convert to km
+function stepsToKm(steps) {
+    return parseFloat((steps * 0.00075).toFixed(2));
 }
  
  
@@ -352,12 +356,21 @@ async function saveStreak() {
 
 async function saveSteps() {
     const steps = parseInt(document.getElementById('stepsInput').value);
-   // Calculăm automat percentilul pe baza pașilor
-    const percentile = calculatePercentile(steps);
- 
-   if (steps >= 0) {
+
+    if (steps >= 0) {
+
+        const percentile = calculatePercentile(steps);
+        const km = stepsToKm(steps);
+
         document.getElementById('stepsNumber').textContent = formatSteps(steps);
         document.getElementById('percentile').textContent = percentile + '%';
+        document.getElementById('distanceNumber').textContent = km;
+
+        
+        appData.steps = steps;
+        appData.percentile = percentile;
+        appData.distance = km;
+
         await saveToStorage();
         closeModal('stepsModal');
     }
