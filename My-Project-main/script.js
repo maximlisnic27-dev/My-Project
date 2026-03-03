@@ -1,8 +1,33 @@
-// IndexedDB wrapper for iframe-safe storage
+
 const DB_NAME = 'SportStatsDB';
 const DB_VERSION = 1;
 const STORE_NAME = 'appData';
 let db;
+
+function saveLocalData() {
+    localStorage.setItem('streak', document.getElementById('streakNumber').textContent);
+    localStorage.setItem('steps', parseSteps(document.getElementById('stepsNumber').textContent));
+}
+
+function loadLocalData() {
+    const storedStreak = localStorage.getItem('streak');
+    const storedSteps = localStorage.getItem('steps');
+
+    if (storedStreak !== null) {
+        document.getElementById('streakNumber').textContent = storedStreak;
+        updateDots(parseInt(storedStreak));
+    }
+
+    if (storedSteps !== null) {
+        const steps = parseInt(storedSteps);
+        const percentile = calculatePercentile(steps);
+        const km = stepsToKm(steps);
+
+        document.getElementById('stepsNumber').textContent = formatSteps(steps);
+        document.getElementById('percentile').textContent = percentile + '%';
+        document.getElementById('distanceNumber').textContent = km;
+    }
+}
 
 // Initialize IndexedDB
 function initDB() {
@@ -69,7 +94,8 @@ let profileData = {
 // Initialize
 document.addEventListener('DOMContentLoaded', async function() {
     await initDB();
-    updateDots(appData.streak);
+
+    loadLocalData();   // ← 
     initChart();
     await loadFromStorage();
 });
@@ -346,10 +372,13 @@ function closeModal(modalId) {
 // Save functions
 async function saveStreak() {
     const value = parseInt(document.getElementById('streakInput').value);
+
     if (value >= 0 && value <= 30) {
         document.getElementById('streakNumber').textContent = value;
         updateDots(value);
-        await saveToStorage();
+
+        saveLocalData();   // ← 
+
         closeModal('streakModal');
     }
 }
@@ -366,12 +395,8 @@ async function saveSteps() {
         document.getElementById('percentile').textContent = percentile + '%';
         document.getElementById('distanceNumber').textContent = km;
 
-        
-        appData.steps = steps;
-        appData.percentile = percentile;
-        appData.distance = km;
+        saveLocalData();   // ← 
 
-        await saveToStorage();
         closeModal('stepsModal');
     }
 }
